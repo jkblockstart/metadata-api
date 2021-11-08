@@ -1,8 +1,8 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { MetaDataEntity } from './metadata/metadata.entity';
-import { MetadataModule } from './metadata/metadata.module';
+import { MetaDataEntity } from './modules/metadata/metadata.entity';
+import { MetadataModule } from './modules/metadata/metadata.module';
 import { MulterModule } from '@nestjs/platform-express';
 
 const entities = [MetaDataEntity];

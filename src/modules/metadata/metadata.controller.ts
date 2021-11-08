@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseInterceptors, UploadedFile, Param } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MetadataService } from './metadata.service';
 import { QueryIn } from './metadata.interface';
@@ -11,7 +11,7 @@ import { extname } from "path";
 export class MetadataController {
   constructor(private metadataService: MetadataService) {}
 
-  @Get('nft')
+  /*@Get('nft')
   async getDataByNFT(@Query() queryParams: QueryIn) {
     return this.metadataService.getFilterData(queryParams);
   }
@@ -20,17 +20,17 @@ export class MetadataController {
   @Post()
   addData(@Body() metaData: MetadataDTO) {
     return this.metadataService.addData(metaData);
-  }
+  }*/
 
   // add data
   @Post('save')
-  saveData(@Body() metaData: MetadataDTO){
-    return this.metadataService.saveData(metaData);
+  saveData(@Body() metadata: MetadataDTO){
+    return this.metadataService.saveData(metadata);
   }
 
-  @Get('nftv1')
-  async getData(@Query() queryParams: QueryIn){
-    return this.metadataService.getData(queryParams);
+  @Get('nftv1/:nft/:nftId')
+  async getData(@Param('nft') nft, @Param('nftId') nftId){
+    return this.metadataService.getData(nft, nftId);
   }
 
   @Post('upload')

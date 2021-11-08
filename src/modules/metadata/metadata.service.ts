@@ -12,9 +12,9 @@ const csv = require('csvtojson');
 
 @Injectable()
 export class MetadataService {
-  constructor(public readonly metaDataRepository: MetaDataRepository) {}
+  constructor(public readonly metadataRepository: MetaDataRepository) {}
 
-  createMetaData(metadata: MetadataDTO) {
+  /*createMetaData(metadata: MetadataDTO) {
     const newData = [];
     metadata.attributes.forEach((metaAttr) => {
       newData.push({
@@ -25,9 +25,9 @@ export class MetadataService {
       });
     });
     return insertMany('meta_data_entity', newData);
-  }
+  }*/
   //add or post
-  async addData(metadata: MetadataDTO) {
+  /*async addData(metadata: MetadataDTO) {
     const getData = await getMetaDatabyNftNftId({
       nft: metadata.nft,
       nftId: metadata.nftId,
@@ -48,10 +48,10 @@ export class MetadataService {
     } else {
       return this.createMetaData(metadata);
     }
-  }
+  }*/
 
   //Get data by nft and nftID
-  async getFilterData(queryData: QueryIn) {
+  /*async getFilterData(queryData: QueryIn) {
     let data = await getMetaDatabyNftNftId(queryData);
     const objMeta: MetadataDTO = {
       id: '',
@@ -89,7 +89,7 @@ export class MetadataService {
       }
     }
     return objMeta;
-  }
+  }*/
 
   async saveData(metadata: MetadataDTO){
     
@@ -116,8 +116,8 @@ export class MetadataService {
 
   }
 
-  async getData(queryData: QueryIn){
-    let data = await getMetaDatabyNftNftId(queryData);
+  async getData(nft: string, nftId: string){
+    let data = await getMetaDatabyNftNftId({nft: nft, nftId: parseInt(nftId)});
     // console.log(data);
 
     let toReturn = {};

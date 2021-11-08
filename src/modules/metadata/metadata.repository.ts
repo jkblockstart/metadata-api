@@ -1,4 +1,4 @@
-import { getManyBy } from '../helpers';
+import { getManyBy } from '../../helpers';
 import { EntityRepository, getConnection, Repository } from 'typeorm';
 import { MetaDataEntity } from './metadata.entity';
 // import { format } from 'pg-format';
