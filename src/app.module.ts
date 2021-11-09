@@ -1,11 +1,11 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { MetaDataEntity } from './modules/metadata/metadata.entity';
+import { Metadata } from './modules/metadata/metadata.entity';
 import { MetadataModule } from './modules/metadata/metadata.module';
 import { MulterModule } from '@nestjs/platform-express';
 
-const entities = [MetaDataEntity];
+const entities = [Metadata];
 
 @Global()
 @Module({
@@ -19,7 +19,7 @@ const entities = [MetaDataEntity];
       username: process.env.postgres_user,
       password: process.env.postgres_password,
       database: process.env.postgres_database,
-      synchronize: true,
+      synchronize: false,
       autoLoadEntities: true,
       entities: entities,
     }),

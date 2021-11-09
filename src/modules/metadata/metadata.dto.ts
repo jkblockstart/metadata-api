@@ -8,8 +8,6 @@ import {
 } from 'class-validator';
 
 export class MetadataDTO {
-  @IsNumber()
-  id: string;
 
   @IsString()
   nft: string;

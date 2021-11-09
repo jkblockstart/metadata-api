@@ -1,5 +1,4 @@
-export interface MetaDataIn extends AttributeDataIn {
-  id: string;
+export interface MetaDataInterface extends AttributeDataIn {
   nft: string;
   nftId: number;
   attributes?: AttributeDataIn[];

@@ -7,20 +7,9 @@ import { MetadataDTO } from './metadata.dto';
 import { diskStorage } from "multer";
 import { extname } from "path";
 
-@Controller('metadata')
+@Controller('')
 export class MetadataController {
   constructor(private metadataService: MetadataService) {}
-
-  /*@Get('nft')
-  async getDataByNFT(@Query() queryParams: QueryIn) {
-    return this.metadataService.getFilterData(queryParams);
-  }
-
-  // register data
-  @Post()
-  addData(@Body() metaData: MetadataDTO) {
-    return this.metadataService.addData(metaData);
-  }*/
 
   // add data
   @Post('save')
@@ -28,18 +17,18 @@ export class MetadataController {
     return this.metadataService.saveData(metadata);
   }
 
-  @Get('nftv1/:nft/:nftId')
-  async getData(@Param('nft') nft, @Param('nftId') nftId){
-    return this.metadataService.getData(nft, nftId);
+  @Get('/:nft/:nftid')
+  async getData(@Param('nft') nft, @Param('nftid') nftid){
+    return this.metadataService.getData(nft, nftid);
   }
 
-  @Post('upload')
+  @Post('upload/:nft')
   @UseInterceptors(FileInterceptor("file", {
     storage: diskStorage({
       destination: './files'
     })
   }))
-  async upload(@UploadedFile() file){
-    return this.metadataService.processFile(file);
+  async upload(@UploadedFile() file, @Param('nft') nft){
+    return this.metadataService.bulkUploadData(file, nft);
   }
 }
