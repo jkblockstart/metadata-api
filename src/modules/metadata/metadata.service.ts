@@ -20,16 +20,12 @@ export class MetadataService {
     
     try{
 
-      if(nftId < 1){
-        throw new BadRequestException('nftId should be greater than 0');
-      }
-
       // fetch by nft and nftId
       // check if something is duplicate or not
-      let dbData = await getMetadatasBy({"nft": nft, "nftId": nftId});
+      let existingMetafields = await getMetadatasBy({"nft": nft, "nftId": nftId});
       let alreadyStored = [];
       let errors = [];
-      dbData.forEach((elem) => {
+      existingMetafields.forEach((elem) => {
         alreadyStored.push(`${elem.nft}-${elem.nftId}-${elem.attribute}`);
       })
 
@@ -88,13 +84,9 @@ export class MetadataService {
         })
         toReturn['attributes'] = attributeData
 
-        return toReturn;
-      }else{
-        toReturn['nft'] = nft;
-        toReturn['nftId'] = nftid;
-        toReturn['attributes'] = [];
-        return toReturn;
       }
+
+      return toReturn;
 
     }catch(err) {
 
@@ -104,50 +96,55 @@ export class MetadataService {
   }
 
   async bulkUploadData(file, nft){
-    let filePath = path.join(__dirname, '..', '..', '..', 'files', file.filename);
-    
-    const jsonArray= await csv().fromFile(filePath);
-    let allData = [];
+    try {
 
-    let alreadynftid = {};
-    let errors = [];
+      let filePath = path.join(__dirname, '..', '..', '..', 'files', file.filename);
     
-    jsonArray.forEach((data) => {
-      let {nftId} = data
+      const jsonArray= await csv().fromFile(filePath);
+      let allData = [];
 
-      delete data['nftId']
+      let alreadynftid = {};
+      let errors = [];
       
-      Object.keys(data).forEach((elem) => {
+      jsonArray.forEach((data) => {
+        let {nftId} = data
 
-        // check for duplicate entry inside csv file
-        if(alreadynftid[nftId] && alreadynftid[nftId].indexOf(elem) != -1){
-          errors.push(`Duplicate entry issue: ${nftId} - ${elem} - ${data[elem]}`);
-        }else {
-          if(alreadynftid[nftId]){
-            alreadynftid[nftId].push(elem);
-          }else{
-            alreadynftid[nftId] = [elem];
-          }
-        }
+        delete data['nftId']
         
-        let temp = [];
-        temp.push(uuid());
-        temp.push(nft);
-        temp.push(nftId);
-        temp.push(elem);
-        temp.push(data[elem]);
+        Object.keys(data).forEach((row) => {
 
-        allData.push(temp)
+          // check for duplicate entry inside csv file
+          if(alreadynftid[nftId] && alreadynftid[nftId].indexOf(row) != -1){
+            errors.push(`Duplicate entry issue: ${nftId} - ${row} - ${data[row]}`);
+          }else {
+            if(alreadynftid[nftId]){
+              alreadynftid[nftId].push(row);
+            }else{
+              alreadynftid[nftId] = [row];
+            }
+          }
+          
+          let temp = [];
+          temp.push(uuid());
+          temp.push(nft);
+          temp.push(nftId);
+          temp.push(row);
+          temp.push(data[row]);
+
+          allData.push(temp)
+        })
       })
-    })
 
-    return false;
+      if(errors.length > 0){
+        throw new BadRequestException(JSON.stringify(errors));
+      }
 
-    if(errors.length > 0){
-      throw new BadRequestException(JSON.stringify(errors));
+      await metadataBulkInsert(allData);
+      return "done"
+
+    } catch(err) {
+      throw new BadRequestException(err.message)
     }
-
-    await metadataBulkInsert(allData);
-    return "done"
+    
   }
 }

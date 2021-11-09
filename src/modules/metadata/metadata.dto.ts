@@ -5,6 +5,7 @@ import {
   IsNotEmpty,
   IsNumber,
   IsString,
+  Min,
 } from 'class-validator';
 
 export class MetadataDTO {
@@ -14,6 +15,7 @@ export class MetadataDTO {
 
   @IsNumber()
   @IsNotEmpty()
+  @Min(1)
   nftId: number;
 
   @IsArray()
