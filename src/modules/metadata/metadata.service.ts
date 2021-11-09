@@ -1,15 +1,14 @@
-import { HttpException, HttpStatus, Injectable, BadRequestException } from '@nestjs/common';
+import {  Injectable, BadRequestException } from '@nestjs/common';
 import {
   getMetadatasBy,
   MetaDataRepository,
   metadataBulkInsert,
 } from './metadata.repository';
-import { QueryIn } from './metadata.interface';
 import { MetadataDTO } from './metadata.dto';
 import * as path from 'path';
 const csv = require('csvtojson');
 import { uuid } from 'uuidv4';
-import { arrayNotEmpty } from 'class-validator';
+import * as fs from 'fs';
 
 @Injectable()
 export class MetadataService {
@@ -65,9 +64,9 @@ export class MetadataService {
     
   }
 
-  async getData(nft: string, nftid: string){
+  async getData(nft: string, nftId: string){
     try {
-      let data = await getMetadatasBy({nft: nft, nftId: parseInt(nftid)});
+      let data = await getMetadatasBy({nft: nft, nftId: parseInt(nftId)});
       // console.log(data);
       
       let toReturn = {};
@@ -91,7 +90,7 @@ export class MetadataService {
         return toReturn;
       }else{
         toReturn['nft'] = nft;
-        toReturn['nftId'] = nftid;
+        toReturn['nftId'] = nftId;
         toReturn['attributes'] = [];
         return toReturn;
       }
@@ -104,12 +103,12 @@ export class MetadataService {
   }
 
   async bulkUploadData(file, nft){
-    let filePath = path.join(__dirname, '..', '..', '..', 'files', file.filename);
+    let filePath = await path.join(__dirname, '..', '..', '..', 'files', file.filename);
     
     const jsonArray= await csv().fromFile(filePath);
     let allData = [];
 
-    let alreadynftid = {};
+    let alreadyNftId = {};
     let errors = [];
     
     jsonArray.forEach((data) => {
@@ -120,13 +119,13 @@ export class MetadataService {
       Object.keys(data).forEach((elem) => {
 
         // check for duplicate entry inside csv file
-        if(alreadynftid[nftId] && alreadynftid[nftId].indexOf(elem) != -1){
+        if(alreadyNftId[nftId] && alreadyNftId[nftId].indexOf(elem) != -1){
           errors.push(`Duplicate entry issue: ${nftId} - ${elem} - ${data[elem]}`);
         }else {
-          if(alreadynftid[nftId]){
-            alreadynftid[nftId].push(elem);
+          if(alreadyNftId[nftId]){
+            alreadyNftId[nftId].push(elem);
           }else{
-            alreadynftid[nftId] = [elem];
+            alreadyNftId[nftId] = [elem];
           }
         }
         
@@ -141,13 +140,23 @@ export class MetadataService {
       })
     })
 
-    return false;
+    // return false;
 
     if(errors.length > 0){
       throw new BadRequestException(JSON.stringify(errors));
     }
 
     await metadataBulkInsert(allData);
+    await fs.unlink(filePath, (err) => {
+      if(err)
+      {
+        return "Could not delete.";
+      }
+      else
+      {
+        return "Deleted successfully.";
+      }
+    });
     return "done"
   }
 }
