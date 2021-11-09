@@ -1,58 +1,53 @@
-import { HttpException, HttpStatus, Injectable, BadRequestException } from '@nestjs/common';
+import {  Injectable, BadRequestException } from '@nestjs/common'
 import {
   getMetadatasBy,
   MetaDataRepository,
   metadataBulkInsert,
-} from './metadata.repository';
-import { QueryIn } from './metadata.interface';
-import { MetadataDTO } from './metadata.dto';
-import * as path from 'path';
-const csv = require('csvtojson');
-import { uuid } from 'uuidv4';
-import { arrayNotEmpty } from 'class-validator';
+} from './metadata.repository'
+import { MetadataDTO } from './metadata.dto'
+import * as path from 'path'
+const csv = require('csvtojson')
+import { uuid } from 'uuidv4'
+import fs from 'fs'
+const fsPromises = fs.promises
 
 @Injectable()
 export class MetadataService {
   constructor(public readonly metadataRepository: MetaDataRepository) {}
 
-  // async saveData(metadata: MetadataDTO){
   async saveData({nft, nftId, attributes}: MetadataDTO){
     
     try{
 
       // fetch by nft and nftId
       // check if something is duplicate or not
-      let existingMetafields = await getMetadatasBy({"nft": nft, "nftId": nftId});
-      let alreadyStored = [];
-      let errors = [];
-      existingMetafields.forEach((elem) => {
-        alreadyStored.push(`${elem.nft}-${elem.nftId}-${elem.attribute}`);
-      })
+      let existingMetafields = await getMetadatasBy({"nft": nft, "nftId": nftId})
+      let alreadyStoredAttributes = existingMetafields.map((item) => item.attribute)
+      let errors = []
 
-      let allData = [];
+      let allData = []
       
       attributes.forEach((data) => {
-        let tempString = `${nft}-${nftId}-${data.attribute}`;
-        if(alreadyStored.indexOf(tempString) != -1){
-          errors.push(`Duplicate Entry: ${tempString}`);
+        if(alreadyStoredAttributes.indexOf(data.attribute) != -1){
+          errors.push(`Duplicate Entry: ${data.attribute}`)
         }else{
-          let temp = [];
-          temp.push(uuid());
-          temp.push(nft);
-          temp.push(nftId);
-          temp.push(data.attribute);
-          temp.push(data.value);
+          let dbObject = []
+          dbObject.push(uuid())
+          dbObject.push(nft)
+          dbObject.push(nftId)
+          dbObject.push(data.attribute)
+          dbObject.push(data.value)
 
-          allData.push(temp);
+          allData.push(dbObject)
         }
 
       })
 
       if(errors.length > 0){
-        throw new BadRequestException(JSON.stringify(errors));
+        throw new BadRequestException(JSON.stringify(errors))
       }else{
-        await metadataBulkInsert(allData);
-        return "Data successfully saved";
+        await metadataBulkInsert(allData)
+        return "Data successfully saved"
       }
       
     } catch(err) {
@@ -61,24 +56,24 @@ export class MetadataService {
     
   }
 
-  async getData(nft: string, nftid: string){
+  async getData(nft: string, nftId: string){
     try {
-      let data = await getMetadatasBy({nft: nft, nftId: parseInt(nftid)});
-      // console.log(data);
+      let data = await getMetadatasBy({nft: nft, nftId: parseInt(nftId)})
+      // console.log(data)
       
-      let toReturn = {};
+      let toReturn = {}
       
       if(data.length > 0){
-        let toCheck = ['name', 'description', 'image'];
-        let attributeData = [];
+        let toCheck = ['name', 'description', 'image']
+        let attributeData = []
         data.forEach((item) => {
-          toReturn['nft'] = item.nft;
-          toReturn['nftId'] = item.nftId;
+          toReturn['nft'] = item.nft
+          toReturn['nftId'] = item.nftId
 
           if(toCheck.indexOf(item.attribute.toLowerCase()) != -1){
-            toReturn[item.attribute] = item.value;
+            toReturn[item.attribute] = item.value
           }else{
-            attributeData.push({"attribute": item.attribute, "value": item.value});
+            attributeData.push({"attribute": item.attribute, "value": item.value})
           }
 
         })
@@ -86,65 +81,69 @@ export class MetadataService {
 
       }
 
-      return toReturn;
+      return toReturn
 
-    }catch(err) {
-
+    } catch(err) {
+      return {}
     }
     
 
   }
 
-  async bulkUploadData(file, nft){
+  async bulkUploadData(file: any, nft: string){
+
     try {
-
-      let filePath = path.join(__dirname, '..', '..', '..', 'files', file.filename);
+      let filePath = await path.join(__dirname, '..', '..', '..', 'files', file.filename)
     
-      const jsonArray= await csv().fromFile(filePath);
-      let allData = [];
+      const jsonArray= await csv().fromFile(filePath)
+      let allData = []
 
-      let alreadynftid = {};
-      let errors = [];
+      let alreadyNftId = {}
+      let errors = []
       
       jsonArray.forEach((data) => {
         let {nftId} = data
 
         delete data['nftId']
         
-        Object.keys(data).forEach((row) => {
+        Object.keys(data).forEach((elem) => {
 
           // check for duplicate entry inside csv file
-          if(alreadynftid[nftId] && alreadynftid[nftId].indexOf(row) != -1){
-            errors.push(`Duplicate entry issue: ${nftId} - ${row} - ${data[row]}`);
+          if(alreadyNftId[nftId] && alreadyNftId[nftId].indexOf(elem) != -1){
+            errors.push(`Duplicate entry issue: ${nftId} - ${elem} - ${data[elem]}`)
           }else {
-            if(alreadynftid[nftId]){
-              alreadynftid[nftId].push(row);
+            if(alreadyNftId[nftId]){
+              alreadyNftId[nftId].push(elem)
             }else{
-              alreadynftid[nftId] = [row];
+              alreadyNftId[nftId] = [elem]
             }
           }
           
-          let temp = [];
-          temp.push(uuid());
-          temp.push(nft);
-          temp.push(nftId);
-          temp.push(row);
-          temp.push(data[row]);
+          let dbObject = []
+          dbObject.push(uuid())
+          dbObject.push(nft)
+          dbObject.push(nftId)
+          dbObject.push(elem)
+          dbObject.push(data[elem])
 
-          allData.push(temp)
+          allData.push(dbObject)
         })
       })
 
       if(errors.length > 0){
-        throw new BadRequestException(JSON.stringify(errors));
+        throw new BadRequestException(JSON.stringify(errors))
       }
 
-      await metadataBulkInsert(allData);
-      return "done"
+      await metadataBulkInsert(allData)
+      await fsPromises.unlink(filePath)
+      
+      return "File data successfully saved."
 
-    } catch(err) {
+    } catch (err) {
       throw new BadRequestException(err.message)
     }
+
     
   }
+  
 }

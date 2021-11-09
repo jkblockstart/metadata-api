@@ -1,11 +1,8 @@
-import { Body, Controller, Get, Post, Query, UseInterceptors, UploadedFile, Param } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { MetadataService } from './metadata.service';
-import { QueryIn } from './metadata.interface';
-import { MetadataDTO } from './metadata.dto';
-
-import { diskStorage } from "multer";
-import { extname } from "path";
+import { Body, Controller, Get, Post, UseInterceptors, UploadedFile, Param } from '@nestjs/common'
+import { FileInterceptor } from '@nestjs/platform-express'
+import { MetadataService } from './metadata.service'
+import { MetadataDTO } from './metadata.dto'
+import { diskStorage } from "multer"
 
 @Controller('')
 export class MetadataController {
@@ -14,12 +11,12 @@ export class MetadataController {
   // add data
   @Post('save')
   saveData(@Body() metadata: MetadataDTO){
-    return this.metadataService.saveData(metadata);
+    return this.metadataService.saveData(metadata)
   }
 
-  @Get('/:nft/:nftid')
-  async getData(@Param('nft') nft, @Param('nftid') nftid){
-    return this.metadataService.getData(nft, nftid);
+  @Get('/:nft/:nftId')
+  async getData(@Param('nft') nft, @Param('nftId') nftId){
+    return this.metadataService.getData(nft, nftId)
   }
 
   @Post('upload/:nft')
@@ -29,6 +26,6 @@ export class MetadataController {
     })
   }))
   async upload(@UploadedFile() file, @Param('nft') nft){
-    return this.metadataService.bulkUploadData(file, nft);
+    return this.metadataService.bulkUploadData(file, nft)
   }
 }

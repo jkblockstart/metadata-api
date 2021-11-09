@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Type } from 'class-transformer'
 import {
   IsArray,
   IsInt,
@@ -6,7 +6,7 @@ import {
   IsNumber,
   IsString,
   Min,
-} from 'class-validator';
+} from 'class-validator'
 
 export class MetadataDTO {
 
