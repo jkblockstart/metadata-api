@@ -1,21 +1,21 @@
-import { BaseEntity, Column, Entity, PrimaryColumn, Unique } from 'typeorm';
-import { MetaDataInterface } from './metadata.interface';
+import { BaseEntity, Column, Entity, PrimaryColumn, Unique } from 'typeorm'
+import { MetaDataInterface } from './metadata.interface'
 
 @Entity()
-@Unique('combination_unique', ["nft", "nftId", "attribute"])
+@Unique('combination_unique', ['nft', 'nftId', 'attribute'])
 export class Metadata extends BaseEntity implements MetaDataInterface {
   @PrimaryColumn()
-  id: string;
+  id: string
 
   @Column()
-  nft: string;
+  nft: string
 
   @Column()
-  nftId: number;
+  nftId: number
 
   @Column()
-  attribute: string;
+  attribute: string
 
   @Column()
-  value: string;
+  value: string
 }

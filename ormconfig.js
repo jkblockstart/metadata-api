@@ -1,6 +1,6 @@
-import * as dotenv from 'dotenv';
+import * as dotenv from 'dotenv'
 
-dotenv.config();
+dotenv.config()
 module.exports = {
   type: 'postgres',
   host: process.env.POSTGRES_HOST,
@@ -14,4 +14,4 @@ module.exports = {
   cli: {
     migrationsDir: 'src/migrations',
   },
-};
+}
