@@ -1,11 +1,12 @@
-import { Type } from 'class-transformer';
+import { Type } from 'class-transformer'
 import {
   IsArray,
   IsInt,
   IsNotEmpty,
   IsNumber,
   IsString,
-} from 'class-validator';
+  Min,
+} from 'class-validator'
 
 export class MetadataDTO {
 
@@ -14,6 +15,7 @@ export class MetadataDTO {
 
   @IsNumber()
   @IsNotEmpty()
+  @Min(1)
   nftId: number;
 
   @IsArray()

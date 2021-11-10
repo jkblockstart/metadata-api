@@ -6,7 +6,7 @@ const format = require('pg-format')
 export const getMetadatasBy = getManyBy(Metadata)
 
 @EntityRepository(Metadata)
-export class MetaDataRepository extends Repository<Metadata> { }
+export class MetaDataRepository extends Repository<Metadata> {}
 
 export async function metadataBulkInsert(values) {
   const sql = `

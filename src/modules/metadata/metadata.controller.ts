@@ -6,7 +6,7 @@ import { diskStorage } from 'multer'
 
 @Controller('')
 export class MetadataController {
-  constructor(private metadataService: MetadataService) { }
+  constructor(private metadataService: MetadataService) {}
 
   // add data
   @Post('save')
