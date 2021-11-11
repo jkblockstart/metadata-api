@@ -1,8 +1,8 @@
 import { Injectable, BadRequestException } from '@nestjs/common'
-import { getMetadatasBy, MetaDataRepository, metadataBulkInsert } from './metadata.repository'
+import { getMetadatasBy, MetaDataRepository, metadataBulkInsert, fetchDataUsingId } from './metadata.repository'
 import { MetadataDTO } from './metadata.dto'
 import * as path from 'path'
-import csv from 'csvtojson'
+import * as csv from 'csvtojson'
 import { uuid } from 'uuidv4'
 
 import fs from 'fs'
@@ -20,10 +20,11 @@ export class MetadataService {
       const existingAttributes = existingMetadata.map((item) => item.attribute)
       const errors = []
       const dataToInsert = []
+      const attributesFromBody = []
       //TODO: change to for of loop
       //TODO: second check
-      attributes.forEach((data) => {
-        if (existingAttributes.indexOf(data.attribute) != -1) {
+      for (const data of attributes) {
+        if (existingAttributes.indexOf(data.attribute) != -1 || attributesFromBody.indexOf(data.attribute) != -1) {
           errors.push(`Duplicate Entry: ${data.attribute}`)
         } else {
           const row = []
@@ -33,9 +34,11 @@ export class MetadataService {
           row.push(data.attribute)
           row.push(data.value)
 
+          attributesFromBody.push(data.attribute)
+
           dataToInsert.push(row)
         }
-      })
+      }
 
       if (errors.length > 0) {
         throw new BadRequestException(JSON.stringify(errors))
@@ -59,13 +62,14 @@ export class MetadataService {
         const commonAttributes = ['name', 'description', 'image']
         const attributes = []
         //TODO: replace with for of loop
-        metadata.forEach((item) => {
+        for (const item of metadata) {
           if (commonAttributes.indexOf(item.attribute.toLowerCase()) != -1) {
             reshapedMetadata[item.attribute] = item.value
           } else {
             attributes.push({ attribute: item.attribute, value: item.value })
           }
-        })
+        }
+
         reshapedMetadata.attributes = attributes
       }
 
@@ -111,6 +115,14 @@ export class MetadataService {
 
       if (errors.length) {
         throw new BadRequestException(JSON.stringify(errors))
+      }
+
+      const nftIdData = await fetchDataUsingId(processedNFTId, nft)
+
+      if (nftIdData.length > 0) {
+        let errorNftIds = nftIdData.map((item) => item.nftId)
+        errorNftIds = [...new Set(errorNftIds)]
+        throw new BadRequestException(`${errorNftIds.join(', ')} already present in Database`)
       }
 
       await metadataBulkInsert(dataToInsert)
