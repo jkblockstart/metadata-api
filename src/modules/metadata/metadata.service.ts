@@ -20,13 +20,14 @@ export class MetadataService {
       const existingAttributes = existingMetadata.map((item) => item.attribute)
       const errors = []
       const dataToInsert = []
-      const attributesFromBody = []
       //TODO: change to for of loop
       //TODO: second check
       for (const data of attributes) {
-        if (existingAttributes.indexOf(data.attribute) != -1 || attributesFromBody.indexOf(data.attribute) != -1) {
+        if (existingAttributes.indexOf(data.attribute) != -1) {
           errors.push(`Duplicate Entry: ${data.attribute}`)
-        } else {
+          continue
+        }
+        if (!errors.length) {
           const row = []
           row.push(uuid())
           row.push(nft)
@@ -34,8 +35,7 @@ export class MetadataService {
           row.push(data.attribute)
           row.push(data.value)
 
-          attributesFromBody.push(data.attribute)
-
+          existingAttributes.push(data.attribute)
           dataToInsert.push(row)
         }
       }
@@ -117,12 +117,11 @@ export class MetadataService {
         throw new BadRequestException(JSON.stringify(errors))
       }
 
-      const nftIdData = await fetchDataUsingId(processedNFTId, nft)
+      const existingNFTIds = await fetchDataUsingId(processedNFTId, nft)
 
-      if (nftIdData.length > 0) {
-        let errorNftIds = nftIdData.map((item) => item.nftId)
-        errorNftIds = [...new Set(errorNftIds)]
-        throw new BadRequestException(`${errorNftIds.join(', ')} already present in Database`)
+      if (existingNFTIds.length > 0) {
+        const errorNftIds = existingNFTIds.map((item) => item.nftId)
+        throw new BadRequestException(`${errorNftIds.join(', ')} metadata for these NFTId is already added`)
       }
 
       await metadataBulkInsert(dataToInsert)
