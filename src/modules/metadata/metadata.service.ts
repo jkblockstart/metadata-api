@@ -52,42 +52,8 @@ export class MetadataService {
       if (errors.length > 0) {
         throw new BadRequestException(JSON.stringify(errors))
       } else {
-        try {
-          // fetch by nft and nftId
-          // check if something is duplicate or not
-          const existingMetadata = await getMetadatasBy({ nft, nftId })
-          const existingAttributes = existingMetadata.map((item) => item.attribute)
-          const errors = []
-          const dataToInsert = []
-          const attributesFromBody = []
-          //TODO: change to for of loop
-          //TODO: second check
-          for (const data of attributes) {
-            if (existingAttributes.indexOf(data.attribute) != -1 || attributesFromBody.indexOf(data.attribute) != -1) {
-              errors.push(`Duplicate Entry: ${data.attribute}`)
-            } else {
-              const row = []
-              row.push(uuid())
-              row.push(nft)
-              row.push(nftId)
-              row.push(data.attribute)
-              row.push(data.value)
-
-              attributesFromBody.push(data.attribute)
-
-              dataToInsert.push(row)
-            }
-          }
-
-          if (errors.length > 0) {
-            throw new BadRequestException(JSON.stringify(errors))
-          } else {
-            await metadataBulkInsert(dataToInsert)
-            return 'Data successfully saved'
-          }
-        } catch (err) {
-          throw new BadRequestException(err.message)
-        }
+        await metadataBulkInsert(dataToInsert)
+        return 'Data successfully saved'
       }
     } catch (err) {
       throw new BadRequestException(err.message)
