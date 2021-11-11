@@ -12,35 +12,35 @@ import fs from 'fs'
 export class MetadataService {
   constructor(public readonly metadataRepository: MetaDataRepository) {}
 
-  async saveData({ nft, nftId, attributes }: MetadataDTO) {
+  async addMetadata({ nft, nftId, attributes }: MetadataDTO) {
     try {
       // fetch by nft and nftId
       // check if something is duplicate or not
-      const existingMetafields = await getMetadatasBy({ nft: nft, nftId: nftId })
-      const alreadyStoredAttributes = existingMetafields.map((item) => item.attribute)
+      const existingMetadata = await getMetadatasBy({ nft, nftId })
+      const existingAttributes = existingMetadata.map((item) => item.attribute)
       const errors = []
-
-      const allData = []
-
+      const dataToInsert = []
+      //TODO: change to for of loop
+      //TODO: second check
       attributes.forEach((data) => {
-        if (alreadyStoredAttributes.indexOf(data.attribute) != -1) {
+        if (existingAttributes.indexOf(data.attribute) != -1) {
           errors.push(`Duplicate Entry: ${data.attribute}`)
         } else {
-          const dbObject = []
-          dbObject.push(uuid())
-          dbObject.push(nft)
-          dbObject.push(nftId)
-          dbObject.push(data.attribute)
-          dbObject.push(data.value)
+          const row = []
+          row.push(uuid())
+          row.push(nft)
+          row.push(nftId)
+          row.push(data.attribute)
+          row.push(data.value)
 
-          allData.push(dbObject)
+          dataToInsert.push(row)
         }
       })
 
       if (errors.length > 0) {
         throw new BadRequestException(JSON.stringify(errors))
       } else {
-        await metadataBulkInsert(allData)
+        await metadataBulkInsert(dataToInsert)
         return 'Data successfully saved'
       }
     } catch (err) {
@@ -48,78 +48,72 @@ export class MetadataService {
     }
   }
 
-  async getData(nft: string, nftId: string) {
+  async getMetadata(nft: string, nftId: number) {
     try {
-      const data = await getMetadatasBy({ nft: nft, nftId: parseInt(nftId) })
+      const metadata = await getMetadatasBy({ nft, nftId })
       // console.log(data)
 
-      const toReturn = {}
+      const reshapedMetadata: any = {}
 
-      if (data.length > 0) {
-        const toCheck = ['name', 'description', 'image']
-        const attributeData = []
-        data.forEach((item) => {
-          toReturn['nft'] = item.nft
-          toReturn['nftId'] = item.nftId
-
-          if (toCheck.indexOf(item.attribute.toLowerCase()) != -1) {
-            toReturn[item.attribute] = item.value
+      if (metadata.length > 0) {
+        const commonAttributes = ['name', 'description', 'image']
+        const attributes = []
+        //TODO: replace with for of loop
+        metadata.forEach((item) => {
+          if (commonAttributes.indexOf(item.attribute.toLowerCase()) != -1) {
+            reshapedMetadata[item.attribute] = item.value
           } else {
-            attributeData.push({ attribute: item.attribute, value: item.value })
+            attributes.push({ attribute: item.attribute, value: item.value })
           }
         })
-        toReturn['attributes'] = attributeData
+        reshapedMetadata.attributes = attributes
       }
 
-      return toReturn
+      return reshapedMetadata
     } catch (err) {
       return {}
     }
   }
 
-  async bulkUploadData(file: any, nft: string) {
+  async bulkUploadMetadata(file: any, nft: string) {
     try {
       const filePath = await path.join(__dirname, '..', '..', '..', 'files', file.filename)
 
-      const jsonArray = await csv().fromFile(filePath)
-      const allData = []
+      const metadataArray = await csv().fromFile(filePath)
+      const dataToInsert = []
 
-      const alreadyNftId = {}
       const errors = []
 
-      jsonArray.forEach((data) => {
-        const { nftId } = data
-
-        delete data['nftId']
-
-        Object.keys(data).forEach((elem) => {
-          // check for duplicate entry inside csv file
-          if (alreadyNftId[nftId] && alreadyNftId[nftId].indexOf(elem) != -1) {
-            errors.push(`Duplicate entry issue: ${nftId} - ${elem} - ${data[elem]}`)
-          } else {
-            if (alreadyNftId[nftId]) {
-              alreadyNftId[nftId].push(elem)
-            } else {
-              alreadyNftId[nftId] = [elem]
-            }
+      //TODO: create an array of all nftId and fetch nftId from table for those nftId if get data return error nft id already exist
+      const processedNFTId = []
+      for (const row of metadataArray) {
+        if (typeof row.nftId != 'number' || row.nftId <= 0) {
+          errors.push(`Invalid nftId ${row.nftId}`)
+          continue
+        }
+        if (processedNFTId.indexOf(row.nftId) >= 0) {
+          errors.push(`Duplicalte entry for NFT Id ${row.nftId}`)
+          continue
+        }
+        if (!errors.length) {
+          processedNFTId.push(row.nftId)
+          for (const key in row) {
+            const rowToInsert = []
+            rowToInsert.push(uuid())
+            rowToInsert.push(nft)
+            rowToInsert.push(row.nftId)
+            rowToInsert.push(key)
+            rowToInsert.push(row[key])
+            dataToInsert.push(rowToInsert)
           }
+        }
+      }
 
-          const dbObject = []
-          dbObject.push(uuid())
-          dbObject.push(nft)
-          dbObject.push(nftId)
-          dbObject.push(elem)
-          dbObject.push(data[elem])
-
-          allData.push(dbObject)
-        })
-      })
-
-      if (errors.length > 0) {
+      if (errors.length) {
         throw new BadRequestException(JSON.stringify(errors))
       }
 
-      await metadataBulkInsert(allData)
+      await metadataBulkInsert(dataToInsert)
       await fs.promises.unlink(filePath)
 
       return 'File data successfully saved.'

@@ -1,41 +1,33 @@
 import { Type } from 'class-transformer'
-import {
-  IsArray,
-  IsInt,
-  IsNotEmpty,
-  IsNumber,
-  IsString,
-  Min,
-} from 'class-validator'
+import { IsArray, IsInt, IsNotEmpty, IsNumber, IsString, Min } from 'class-validator'
 
 export class MetadataDTO {
-
   @IsString()
-  nft: string;
+  nft: string
 
   @IsNumber()
   @IsNotEmpty()
   @Min(1)
-  nftId: number;
+  nftId: number
 
   @IsArray()
   @Type(() => AttributeDTO)
-  attributes: AttributeDTO[];
+  attributes: AttributeDTO[]
 }
 
 export class AttributeDTO {
   @IsString()
-  attribute: string;
+  attribute: string
 
   @IsString()
-  value: string;
+  value: string
 }
 
 export class QueryDTO {
   @IsString()
-  nft: string;
+  nft: string
 
   @IsInt()
   @Type(() => Number)
-  nftId: number;
+  nftId: number
 }

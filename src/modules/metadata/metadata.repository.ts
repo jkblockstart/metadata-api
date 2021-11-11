@@ -8,13 +8,13 @@ export const getMetadatasBy = getManyBy(Metadata)
 @EntityRepository(Metadata)
 export class MetaDataRepository extends Repository<Metadata> {}
 
-export async function metadataBulkInsert(values) {
+export async function metadataBulkInsert(values: any) {
   const sql = `
-  INSERT INTO 
-    "metadata" 
-    ("id", "nft", "nftId", "attribute", "value") 
-  VALUES
-  %L`
+    INSERT INTO 
+      "metadata" 
+      ("id", "nft", "nftId", "attribute", "value") 
+    VALUES
+      %L`
 
   const result = await getConnection().query(format(sql, values))
   return result

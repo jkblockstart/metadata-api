@@ -10,13 +10,13 @@ export class MetadataController {
 
   // add data
   @Post('save')
-  saveData(@Body() metadata: MetadataDTO) {
-    return this.metadataService.saveData(metadata)
+  addMetadata(@Body() metadata: MetadataDTO) {
+    return this.metadataService.addMetadata(metadata)
   }
 
   @Get('/:nft/:nftId')
-  async getData(@Param('nft') nft, @Param('nftId') nftId) {
-    return this.metadataService.getData(nft, nftId)
+  async getMetadata(@Param('nft') nft: string, @Param('nftId') nftId: number) {
+    return this.metadataService.getMetadata(nft, nftId)
   }
 
   @Post('upload/:nft')
@@ -27,7 +27,7 @@ export class MetadataController {
       }),
     })
   )
-  async upload(@UploadedFile() file, @Param('nft') nft) {
-    return this.metadataService.bulkUploadData(file, nft)
+  async bulkUploadMetadata(@UploadedFile() file, @Param('nft') nft: string) {
+    return this.metadataService.bulkUploadMetadata(file, nft)
   }
 }
