@@ -1,11 +1,11 @@
-import { Injectable, BadRequestException } from '@nestjs/common'
+import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common'
 import { getMetadatasBy, MetaDataRepository, metadataBulkInsert, fetchDataUsingId } from './metadata.repository'
 import { MetadataDTO } from './metadata.dto'
 import * as path from 'path'
 import * as csv from 'csvtojson'
 import { uuid } from 'uuidv4'
 
-import fs from 'fs'
+// import fs from 'fs'
 import { ConfigService } from '@nestjs/config'
 // const fsPromises = fs.promises
 
@@ -27,13 +27,14 @@ export class MetadataService {
           const existingAttributes = existingMetadata.map((item) => item.attribute)
           const errors = []
           const dataToInsert = []
-          const attributesFromBody = []
           //TODO: change to for of loop
           //TODO: second check
           for (const data of attributes) {
-            if (existingAttributes.indexOf(data.attribute) != -1 || attributesFromBody.indexOf(data.attribute) != -1) {
+            if (existingAttributes.indexOf(data.attribute) != -1) {
               errors.push(`Duplicate Entry: ${data.attribute}`)
-            } else {
+              continue
+            }
+            if (!errors.length) {
               const row = []
               row.push(uuid())
               row.push(nft)
@@ -41,8 +42,7 @@ export class MetadataService {
               row.push(data.attribute)
               row.push(data.value)
 
-              attributesFromBody.push(data.attribute)
-
+              existingAttributes.push(data.attribute)
               dataToInsert.push(row)
             }
           }
@@ -50,15 +50,49 @@ export class MetadataService {
           if (errors.length > 0) {
             throw new BadRequestException(JSON.stringify(errors))
           } else {
-            await metadataBulkInsert(dataToInsert)
-            return 'Data successfully saved'
+            try {
+              // fetch by nft and nftId
+              // check if something is duplicate or not
+              const existingMetadata = await getMetadatasBy({ nft, nftId })
+              const existingAttributes = existingMetadata.map((item) => item.attribute)
+              const errors = []
+              const dataToInsert = []
+              const attributesFromBody = []
+              //TODO: change to for of loop
+              //TODO: second check
+              for (const data of attributes) {
+                if (existingAttributes.indexOf(data.attribute) != -1 || attributesFromBody.indexOf(data.attribute) != -1) {
+                  errors.push(`Duplicate Entry: ${data.attribute}`)
+                } else {
+                  const row = []
+                  row.push(uuid())
+                  row.push(nft)
+                  row.push(nftId)
+                  row.push(data.attribute)
+                  row.push(data.value)
+
+                  attributesFromBody.push(data.attribute)
+
+                  dataToInsert.push(row)
+                }
+              }
+
+              if (errors.length > 0) {
+                throw new BadRequestException(JSON.stringify(errors))
+              } else {
+                await metadataBulkInsert(dataToInsert)
+                return 'Data successfully saved'
+              }
+            } catch (err) {
+              throw new BadRequestException(err.message)
+            }
           }
         } catch (err) {
-          throw new BadRequestException(err.message)
+          throw new Error('')
         }
       }
     } catch (err) {
-      throw new Error('')
+      throw new InternalServerErrorException(err)
     }
   }
 
@@ -94,7 +128,7 @@ export class MetadataService {
     try {
       if (!secretKey) {
         throw new BadRequestException('Invalid secretkey.')
-      } else if (JSON.parse(JSON.stringify(this.configService.get('SECRET_KEY'))) != secretKey) {
+      } else if (this.configService.get('SECRET_KEY') != secretKey) {
         throw new BadRequestException('Invalid secretkey.')
       } else {
         try {
@@ -142,16 +176,22 @@ export class MetadataService {
             throw new BadRequestException(`${errorNftIds.join(', ')} already present in Database`)
           }
 
-          await metadataBulkInsert(dataToInsert)
-          await fs.promises.unlink(filePath)
+          if (errors.length) {
+            throw new BadRequestException(JSON.stringify(errors))
+          }
 
-          return 'File data successfully saved.'
+          const existingNFTIds = await fetchDataUsingId(processedNFTId, nft)
+
+          if (existingNFTIds.length > 0) {
+            const errorNftIds = existingNFTIds.map((item) => item.nftId)
+            throw new BadRequestException(`${errorNftIds.join(', ')} metadata for these NFTId is already added`)
+          }
         } catch (err) {
-          throw new BadRequestException(err.message)
+          throw new BadRequestException(err)
         }
       }
     } catch (err) {
-      throw new BadRequestException(err)
+      throw new InternalServerErrorException(err)
     }
   }
 }

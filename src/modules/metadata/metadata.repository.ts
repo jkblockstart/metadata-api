@@ -25,12 +25,12 @@ export async function fetchDataUsingId(ids: any[], nft: string) {
 
   const sql = `
     SELECT 
-      "nftId"
+      distinct "nftId"
     FROM
       "metadata"
     WHERE
-      "nftId" IN (${idString}) AND "nft" = $1
-  `
+      "nftId" IN (${idString}) AND 
+      "nft" = $1`
 
   const result = await getConnection().query(sql, [nft])
   return result
