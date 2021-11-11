@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common'
+import { Injectable, BadRequestException } from '@nestjs/common'
 import { getMetadatasBy, MetaDataRepository, metadataBulkInsert, fetchDataUsingId } from './metadata.repository'
 import { MetadataDTO } from './metadata.dto'
 import * as path from 'path'
@@ -16,9 +16,41 @@ export class MetadataService {
   async addMetadata({ nft, nftId, attributes }: MetadataDTO, secretKey: string) {
     try {
       if (!secretKey) {
+        throw new BadRequestException('Please provide secretkey.')
+      }
+
+      if (this.configService.get('SECRET_KEY') != secretKey) {
         throw new BadRequestException('Invalid secretkey.')
-      } else if (this.configService.get('SECRET_KEY') != secretKey) {
-        throw new BadRequestException('Invalid secretkey.')
+      }
+
+      // fetch by nft and nftId
+      // check if something is duplicate or not
+      const existingMetadata = await getMetadatasBy({ nft, nftId })
+      const existingAttributes = existingMetadata.map((item) => item.attribute)
+      const errors = []
+      const dataToInsert = []
+      //TODO: change to for of loop
+      //TODO: second check
+      for (const data of attributes) {
+        if (existingAttributes.indexOf(data.attribute) != -1) {
+          errors.push(`Duplicate Entry: ${data.attribute}`)
+          continue
+        }
+        if (!errors.length) {
+          const row = []
+          row.push(uuid())
+          row.push(nft)
+          row.push(nftId)
+          row.push(data.attribute)
+          row.push(data.value)
+
+          existingAttributes.push(data.attribute)
+          dataToInsert.push(row)
+        }
+      }
+
+      if (errors.length > 0) {
+        throw new BadRequestException(JSON.stringify(errors))
       } else {
         try {
           // fetch by nft and nftId
@@ -27,14 +59,13 @@ export class MetadataService {
           const existingAttributes = existingMetadata.map((item) => item.attribute)
           const errors = []
           const dataToInsert = []
+          const attributesFromBody = []
           //TODO: change to for of loop
           //TODO: second check
           for (const data of attributes) {
-            if (existingAttributes.indexOf(data.attribute) != -1) {
+            if (existingAttributes.indexOf(data.attribute) != -1 || attributesFromBody.indexOf(data.attribute) != -1) {
               errors.push(`Duplicate Entry: ${data.attribute}`)
-              continue
-            }
-            if (!errors.length) {
+            } else {
               const row = []
               row.push(uuid())
               row.push(nft)
@@ -42,7 +73,8 @@ export class MetadataService {
               row.push(data.attribute)
               row.push(data.value)
 
-              existingAttributes.push(data.attribute)
+              attributesFromBody.push(data.attribute)
+
               dataToInsert.push(row)
             }
           }
@@ -50,49 +82,15 @@ export class MetadataService {
           if (errors.length > 0) {
             throw new BadRequestException(JSON.stringify(errors))
           } else {
-            try {
-              // fetch by nft and nftId
-              // check if something is duplicate or not
-              const existingMetadata = await getMetadatasBy({ nft, nftId })
-              const existingAttributes = existingMetadata.map((item) => item.attribute)
-              const errors = []
-              const dataToInsert = []
-              const attributesFromBody = []
-              //TODO: change to for of loop
-              //TODO: second check
-              for (const data of attributes) {
-                if (existingAttributes.indexOf(data.attribute) != -1 || attributesFromBody.indexOf(data.attribute) != -1) {
-                  errors.push(`Duplicate Entry: ${data.attribute}`)
-                } else {
-                  const row = []
-                  row.push(uuid())
-                  row.push(nft)
-                  row.push(nftId)
-                  row.push(data.attribute)
-                  row.push(data.value)
-
-                  attributesFromBody.push(data.attribute)
-
-                  dataToInsert.push(row)
-                }
-              }
-
-              if (errors.length > 0) {
-                throw new BadRequestException(JSON.stringify(errors))
-              } else {
-                await metadataBulkInsert(dataToInsert)
-                return 'Data successfully saved'
-              }
-            } catch (err) {
-              throw new BadRequestException(err.message)
-            }
+            await metadataBulkInsert(dataToInsert)
+            return 'Data successfully saved'
           }
         } catch (err) {
-          throw new Error('')
+          throw new BadRequestException(err.message)
         }
       }
     } catch (err) {
-      throw new InternalServerErrorException(err)
+      throw new BadRequestException(err.message)
     }
   }
 
@@ -127,71 +125,69 @@ export class MetadataService {
   async bulkUploadMetadata(file: any, nft: string, secretKey: string) {
     try {
       if (!secretKey) {
+        throw new BadRequestException('Please provide secretkey.')
+      }
+
+      if (this.configService.get('SECRET_KEY') != secretKey) {
         throw new BadRequestException('Invalid secretkey.')
-      } else if (this.configService.get('SECRET_KEY') != secretKey) {
-        throw new BadRequestException('Invalid secretkey.')
-      } else {
-        try {
-          const filePath = await path.join(__dirname, '..', '..', '..', 'files', file.filename)
+      }
 
-          const metadataArray = await csv().fromFile(filePath)
-          const dataToInsert = []
+      const filePath = await path.join(__dirname, '..', '..', '..', 'files', file.filename)
 
-          const errors = []
+      const metadataArray = await csv().fromFile(filePath)
+      const dataToInsert = []
 
-          //TODO: create an array of all nftId and fetch nftId from table for those nftId if get data return error nft id already exist
-          const processedNFTId = []
-          for (const row of metadataArray) {
-            if (typeof row.nftId != 'number' || row.nftId <= 0) {
-              errors.push(`Invalid nftId ${row.nftId}`)
-              continue
-            }
-            if (processedNFTId.indexOf(row.nftId) >= 0) {
-              errors.push(`Duplicalte entry for NFT Id ${row.nftId}`)
-              continue
-            }
-            if (!errors.length) {
-              processedNFTId.push(row.nftId)
-              for (const key in row) {
-                const rowToInsert = []
-                rowToInsert.push(uuid())
-                rowToInsert.push(nft)
-                rowToInsert.push(row.nftId)
-                rowToInsert.push(key)
-                rowToInsert.push(row[key])
-                dataToInsert.push(rowToInsert)
-              }
-            }
+      const errors = []
+
+      //TODO: create an array of all nftId and fetch nftId from table for those nftId if get data return error nft id already exist
+      const processedNFTId = []
+      for (const row of metadataArray) {
+        if (typeof row.nftId != 'number' || row.nftId <= 0) {
+          errors.push(`Invalid nftId ${row.nftId}`)
+          continue
+        }
+        if (processedNFTId.indexOf(row.nftId) >= 0) {
+          errors.push(`Duplicalte entry for NFT Id ${row.nftId}`)
+          continue
+        }
+        if (!errors.length) {
+          processedNFTId.push(row.nftId)
+          for (const key in row) {
+            const rowToInsert = []
+            rowToInsert.push(uuid())
+            rowToInsert.push(nft)
+            rowToInsert.push(row.nftId)
+            rowToInsert.push(key)
+            rowToInsert.push(row[key])
+            dataToInsert.push(rowToInsert)
           }
-
-          if (errors.length) {
-            throw new BadRequestException(JSON.stringify(errors))
-          }
-
-          const nftIdData = await fetchDataUsingId(processedNFTId, nft)
-
-          if (nftIdData.length > 0) {
-            let errorNftIds = nftIdData.map((item) => item.nftId)
-            errorNftIds = [...new Set(errorNftIds)]
-            throw new BadRequestException(`${errorNftIds.join(', ')} already present in Database`)
-          }
-
-          if (errors.length) {
-            throw new BadRequestException(JSON.stringify(errors))
-          }
-
-          const existingNFTIds = await fetchDataUsingId(processedNFTId, nft)
-
-          if (existingNFTIds.length > 0) {
-            const errorNftIds = existingNFTIds.map((item) => item.nftId)
-            throw new BadRequestException(`${errorNftIds.join(', ')} metadata for these NFTId is already added`)
-          }
-        } catch (err) {
-          throw new BadRequestException(err)
         }
       }
+
+      if (errors.length) {
+        throw new BadRequestException(JSON.stringify(errors))
+      }
+
+      const nftIdData = await fetchDataUsingId(processedNFTId, nft)
+
+      if (nftIdData.length > 0) {
+        let errorNftIds = nftIdData.map((item) => item.nftId)
+        errorNftIds = [...new Set(errorNftIds)]
+        throw new BadRequestException(`${errorNftIds.join(', ')} already present in Database`)
+      }
+
+      if (errors.length) {
+        throw new BadRequestException(JSON.stringify(errors))
+      }
+
+      const existingNFTIds = await fetchDataUsingId(processedNFTId, nft)
+
+      if (existingNFTIds.length > 0) {
+        const errorNftIds = existingNFTIds.map((item) => item.nftId)
+        throw new BadRequestException(`${errorNftIds.join(', ')} metadata for these NFTId is already added`)
+      }
     } catch (err) {
-      throw new InternalServerErrorException(err)
+      throw new BadRequestException(err.message)
     }
   }
 }
