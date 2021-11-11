@@ -1,11 +1,11 @@
-import { Global, Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { Metadata } from './modules/metadata/metadata.entity';
-import { MetadataModule } from './modules/metadata/metadata.module';
-import { MulterModule } from '@nestjs/platform-express';
+import { Global, Module } from '@nestjs/common'
+import { ConfigModule } from '@nestjs/config'
+import { TypeOrmModule } from '@nestjs/typeorm'
+import { Metadata } from './modules/metadata/metadata.entity'
+import { MetadataModule } from './modules/metadata/metadata.module'
+import { MulterModule } from '@nestjs/platform-express'
 
-const entities = [Metadata];
+const entities = [Metadata]
 
 @Global()
 @Module({
@@ -25,7 +25,7 @@ const entities = [Metadata];
     }),
     MulterModule.register({
       dest: './files',
-    })
+    }),
   ],
 })
 export class AppModule {}
