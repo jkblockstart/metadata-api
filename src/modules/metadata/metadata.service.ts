@@ -67,8 +67,8 @@ export class MetadataService {
 
       const reshapedMetadata: any = {}
 
-      const metaDataValue = this.metadataAllow(nft, nftId)
-      if (metadata.length > 0 && metaDataValue == true) {
+      const isAllowed = this.metadataAllow(nft, nftId)
+      if (metadata.length > 0 && isAllowed == true) {
         const commonAttributes = ['name', 'description', 'image']
         const attributes = []
         //TODO: replace with for of loop
