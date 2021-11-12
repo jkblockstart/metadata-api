@@ -5,9 +5,7 @@ import * as path from 'path'
 import * as csv from 'csvtojson'
 import { uuid } from 'uuidv4'
 
-// import fs from 'fs'
 import { ConfigService } from '@nestjs/config'
-// const fsPromises = fs.promises
 
 @Injectable()
 export class MetadataService {
@@ -23,14 +21,10 @@ export class MetadataService {
         throw new BadRequestException('Invalid secretkey.')
       }
 
-      // fetch by nft and nftId
-      // check if something is duplicate or not
       const existingMetadata = await getMetadatasBy({ nft, nftId })
       const existingAttributes = existingMetadata.map((item) => item.attribute)
       const errors = []
       const dataToInsert = []
-      //TODO: change to for of loop
-      //TODO: second check
       for (const data of attributes) {
         if (existingAttributes.indexOf(data.attribute) != -1) {
           errors.push(`Duplicate Entry: ${data.attribute}`)
@@ -63,15 +57,12 @@ export class MetadataService {
   async getMetadata(nft: string, nftId: number) {
     try {
       const metadata = await getMetadatasBy({ nft, nftId })
-      // console.log(data)
-
       const reshapedMetadata: any = {}
 
-      const isAllowed = this.metadataAllow(nft, nftId)
+      const isAllowed = await this.metadataAllowed(nft, nftId)
       if (metadata.length > 0 && isAllowed == true) {
         const commonAttributes = ['name', 'description', 'image']
         const attributes = []
-        //TODO: replace with for of loop
         for (const item of metadata) {
           if (commonAttributes.indexOf(item.attribute.toLowerCase()) != -1) {
             reshapedMetadata[item.attribute] = item.value
@@ -106,7 +97,6 @@ export class MetadataService {
 
       const errors = []
 
-      //TODO: create an array of all nftId and fetch nftId from table for those nftId if get data return error nft id already exist
       const processedNFTId = []
       for (const row of metadataArray) {
         if (typeof row.nftId != 'number' || row.nftId <= 0) {
@@ -158,7 +148,7 @@ export class MetadataService {
     }
   }
 
-  metadataAllow(nft: string, nftId: number) {
+  async metadataAllowed(nft: string, nftId: number) {
     return true
   }
 }

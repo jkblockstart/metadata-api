@@ -9,8 +9,8 @@ export class MetadataController {
   constructor(private metadataService: MetadataService) {}
 
   // add data
-  @Post('save')
-  addMetadata(@Body() metadata: MetadataDTO, @Body('secretKey') secretKey: string) {
+  @Post('save/:secretKey')
+  addMetadata(@Body() metadata: MetadataDTO, @Param('secretKey') secretKey: string) {
     return this.metadataService.addMetadata(metadata, secretKey)
   }
 
@@ -19,7 +19,7 @@ export class MetadataController {
     return this.metadataService.getMetadata(nft, nftId)
   }
 
-  @Post('upload/:nft')
+  @Post('upload/:nft/:secretKey')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
@@ -27,7 +27,7 @@ export class MetadataController {
       }),
     })
   )
-  async bulkUploadMetadata(@UploadedFile() file, @Param('nft') nft: string, @Body('secretKey') secretKey: string) {
+  async bulkUploadMetadata(@UploadedFile() file, @Param('nft') nft: string, @Param('secretKey') secretKey: string) {
     return this.metadataService.bulkUploadMetadata(file, nft, secretKey)
   }
 }
