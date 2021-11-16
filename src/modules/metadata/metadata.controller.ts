@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Post, UseInterceptors, UploadedFile, Param } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { MetadataService } from './metadata.service'
-import { MetadataDTO } from './metadata.dto'
+import { MetadataDTO, ContractAdDTO } from './metadata.dto'
 import { diskStorage } from 'multer'
 
 @Controller('')
@@ -29,5 +29,11 @@ export class MetadataController {
   )
   async bulkUploadMetadata(@UploadedFile() file, @Param('nft') nft: string, @Body('secretKey') secretKey: string) {
     return this.metadataService.bulkUploadMetadata(file, nft, secretKey)
+  }
+
+  // set contract address
+  @Post('contractaddress')
+  async saveContractAddress(@Body() contractdata: ContractAdDTO) {
+    return this.metadataService.addContractAddress(contractdata)
   }
 }

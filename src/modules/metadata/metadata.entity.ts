@@ -18,4 +18,7 @@ export class Metadata extends BaseEntity implements MetaDataInterface {
 
   @Column()
   value: string
+
+  @Column()
+  nftContract: string
 }
