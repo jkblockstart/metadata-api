@@ -31,3 +31,11 @@ export class QueryDTO {
   @Type(() => Number)
   nftId: number
 }
+
+export class ContractAdDTO {
+  @IsString()
+  nft: string
+
+  @IsString()
+  contractaddress: string
+}

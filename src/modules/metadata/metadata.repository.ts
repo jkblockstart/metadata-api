@@ -35,3 +35,16 @@ export async function fetchDataUsingId(ids: any[], nft: string) {
   const result = await getConnection().query(sql, [nft])
   return result
 }
+
+export async function insertContractAddress(nft: string, contractaddress: string) {
+  const sql = `
+    UPDATE
+      "metadata"
+    SET
+      "nftContract" = $1
+    WHERE
+      "nft" = $2
+  `
+  const result = await getConnection().query(sql, [contractaddress, nft])
+  return result
+}

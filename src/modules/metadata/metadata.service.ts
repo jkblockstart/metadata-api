@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common'
-import { getMetadatasBy, MetaDataRepository, metadataBulkInsert, fetchDataUsingId } from './metadata.repository'
-import { MetadataDTO } from './metadata.dto'
+import { getMetadatasBy, MetaDataRepository, metadataBulkInsert, fetchDataUsingId, insertContractAddress } from './metadata.repository'
+import { MetadataDTO, ContractAdDTO } from './metadata.dto'
 import * as path from 'path'
 import * as csv from 'csvtojson'
 import { uuid } from 'uuidv4'
@@ -150,5 +150,14 @@ export class MetadataService {
 
   async metadataAllowed(nft: string, nftId: number) {
     return true
+  }
+
+  async addContractAddress({ nft, contractaddress }: ContractAdDTO) {
+    try {
+      await insertContractAddress(nft, contractaddress)
+      return 'Contract address saved successfully'
+    } catch (err) {
+      throw new BadRequestException(err.message)
+    }
   }
 }
